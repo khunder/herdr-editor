@@ -1,0 +1,18 @@
+#!/bin/sh
+# hedit [-t|-d] <file>: open a file in the Herdr editor mod.
+#   default: a pane to the right of the focused one; -d: below it; -t: a new tab.
+set -eu
+where=right
+case "${1:-}" in
+  -t) where=tab; shift ;;
+  -d) where=down; shift ;;
+esac
+[ $# -eq 1 ] || { echo "usage: hedit [-t|-d] <file>" >&2; exit 2; }
+path=$(realpath -m -- "$1")
+[ ! -d "$path" ] || { echo "hedit: $path is a folder" >&2; exit 2; }
+json=$(printf '%s' "$path" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
+if [ "$where" = tab ]; then
+  exec herdr-app do tab.new --mod editor --props "{\"file\":\"$json\"}"
+fi
+# HERDR_PANE is not set by the app, so the split is beside whichever pane has focus.
+exec herdr-app do pane.split --direction "$where" --mod editor --props "{\"file\":\"$json\"}"
